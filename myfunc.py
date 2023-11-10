@@ -34,8 +34,7 @@ def WriteCSV(csv_file_path, data):
     print("Finish!")
     return
 
-def ObserveKey(key, data):
-    print(f'Observing {key}: ')
+def ObserveKey(key, data, mode): # mode0: print table directly, mode1: write table into file
     value_set = set()
     value_dict = dict()
     for d in data:
@@ -61,11 +60,20 @@ def ObserveKey(key, data):
         table.add_row([k, v[0] + v[1], v[0], v[0] / (v[0] + v[1]), v[1], v[1]/ (v[0] + v[1])])
 
     # Print the table
-    print(table)
+    if mode == 0:
+        print(f'Observing {key}: ')
+        print(table)
+    if mode == 1:
+        # Open the file for writing
+        output_file_path = f'observe_result/{key}.txt'
+        with open(output_file_path, 'w') as file:
+            file.write(f'Observing {key}: \n')
+            file.write(str(table))
 
 def Sort_Data_with_CANO_and_Time(data):
     def compare_func(item):
-        return item['cano'], item['locdt'], item['loctm']
+        return item['cano'], int(item['locdt']), int(item['loctm'])
+        # return item['cano']
 
     # Sort the list of dictionaries based on 'age' and 'score'
     data = sorted(data, key=compare_func)
@@ -75,6 +83,10 @@ def Sort_Data_with_CANO_and_Time(data):
     for d in data:
         if d['cano'] != current_cano:
             if current_cano != '':
-                cano_list.append({current_cano, current_list})
+                cano_list.append([current_cano, current_list])
             current_cano = d['cano']
-    return data
+            current_list = [d]
+        else:
+            current_list.append(d)
+    cano_list.append([current_cano, current_list])
+    return cano_list

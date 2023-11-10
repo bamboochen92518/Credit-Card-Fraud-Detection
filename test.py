@@ -1,7 +1,7 @@
 import csv
 from myfunc import ReadCSV, WriteCSV
 
-csv_in_path = 'dataset_1st/public_processed.csv'
+csv_in_path = '../final/dataset_1st/public_processed.csv'
 csv_out_path = 'prediction.csv'
 
 data = ReadCSV(csv_in_path)
