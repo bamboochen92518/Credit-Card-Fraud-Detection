@@ -1,0 +1,30 @@
++-----------+---------------+
+|    Key    |      Type     |
++-----------+---------------+
+|   txkey   | <class 'str'> |
+|   locdt   | <class 'str'> |
+|   loctm   | <class 'str'> |
+|    chid   | <class 'str'> |
+|    cano   | <class 'str'> |
+|   contp   | <class 'str'> |
+|   etymd   | <class 'str'> |
+|   mchno   | <class 'str'> |
+|   acqic   | <class 'str'> |
+|    mcc    | <class 'str'> |
+|   conam   | <class 'str'> |
+|    ecfg   | <class 'str'> |
+|   insfg   | <class 'str'> |
+|   iterm   | <class 'str'> |
+|   bnsfg   | <class 'str'> |
+|   flam1   | <class 'str'> |
+|   stocn   | <class 'str'> |
+|   scity   | <class 'str'> |
+|   stscd   | <class 'str'> |
+|   ovrlt   | <class 'str'> |
+|   flbmk   | <class 'str'> |
+|   hcefg   | <class 'str'> |
+|   csmcu   | <class 'str'> |
+|   csmam   | <class 'str'> |
+| flg_3dsmk | <class 'str'> |
+|   label   | <class 'str'> |
++-----------+---------------+
