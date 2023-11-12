@@ -4,6 +4,8 @@ from prettytable import PrettyTable
 import torch
 from torch.utils.data import TensorDataset
 from torch.nn.functional import normalize
+import copy
+import json
 
 def ReadCSV(csv_file_path):
     # Create a list to store dictionaries
@@ -73,17 +75,13 @@ def ObserveKey(key, data, mode): # mode0: print table directly, mode1: write tab
             file.write(f'Observing {key}: \n')
             file.write(str(table))
 
-def Sort_Data_with_CANO_and_Time(data):
-    def compare_func(item):
-        return item['cano'], int(item['locdt']), int(item['loctm'])
-
-    data = sorted(data, key=compare_func)
-    return data
-
-def Tokenize_Data(data, numeric_features, catagory_features):
+def Tokenize_and_Normalize_Data(data, numeric_features, catagory_features, vocab_file):
     key_dict = dict()
     for key in data[0].keys():
-        key_dict[key] = {"count": 1}
+        if key in catagory_features:
+            key_dict[key] = {"count": 1}
+        if key in numeric_features:
+            key_dict[key] = {"sum": 0, "square": 0}
     total_rows = len(data)
     for d in tqdm(data, total=total_rows, desc='Tokenize'):
         for k, v in d.items():
@@ -91,6 +89,8 @@ def Tokenize_Data(data, numeric_features, catagory_features):
                 d[k] = int(d[k])
             if k in numeric_features:
                 d[k] = float(d[k])
+                key_dict[k]["sum"] += d[k]
+                key_dict[k]["square"] += pow(d[k], 2)
             if k in catagory_features:
                 if v == '':
                     d[k] = 0
@@ -99,43 +99,88 @@ def Tokenize_Data(data, numeric_features, catagory_features):
                         key_dict[k][v] = key_dict[k]["count"]
                         key_dict[k]["count"] += 1
                     d[k] = key_dict[k][v]
-    return data
-
-def Calculate_Embedding_Dimension(data, category_features):
-    max_dict = dict()
+    
     for key in data[0].keys():
-        if key in category_features:
-            max_dict[key] = 0
-    for d in data:
-        for k, v in d.items():
-            if k in category_features and v > max_dict[k]:
-                max_dict[k] = v
-    max_list = list()
-    for v in max_dict.values():
-        max_list.append(v + 1)
-    return max_list
+        if key in numeric_features:
+            key_dict[key]["mean"] = key_dict[key]["sum"] / total_rows
+            key_dict[key]["stderr"] = pow(((key_dict[key]["square"] - pow(key_dict[key]["mean"], 2)) / total_rows), 0.5)
 
-def Data_to_Dataset(tokenized_data, numeric_features, category_features):
+    for d in tqdm(data, total=total_rows, desc='Normalize'):
+        for k, v in d.items():
+            if k in numeric_features:
+                if key_dict[k]["stderr"] != 0:
+                    d[k] = (d[k] - key_dict[k]["mean"]) / key_dict[k]["stderr"]
+                else:
+                    d[k] = 0
+    
+    embedding_dims = list()
+    for k, v in list(key_dict.items()):
+        if k in catagory_features:
+            embedding_dims.append(v["count"])
+            del v["count"]
+        else:
+            del key_dict[k]
+
+    with open(vocab_file, 'w') as file:
+        json.dump(key_dict, file)
+
+    return data, embedding_dims
+
+def Sort_Data_with_CANO_and_Time(data, window_size):
+    def compare_func(item):
+        return item['cano'], int(item['locdt']), int(item['loctm'])
+
+    data = sorted(data, key=compare_func)
+    empty_data = copy.deepcopy(data[0])
+    for k in empty_data.keys():
+        empty_data[k] = 0
+
+    CANO_data = list()
+    current_cano = ''
+    current_list = list()
+    counter = 0
+    for d in data:
+        if d['cano'] == current_cano and counter < window_size:
+            current_list.append(d)
+            counter += 1
+        else:
+            if d['cano'] != current_cano:
+                current_list = [d]
+                current_cano = d['cano']
+                counter = 1
+            else:
+                current_list = current_list[1:] + [d]
+
+        CANO_data.append([empty_data] * (window_size - counter) + current_list)
+
+    return CANO_data
+
+def Data_to_Dataset(sorted_data, numeric_features, category_features, window_size):
 
     data = dict()
     n_input = list()
     c_input = list()
-    for k in numeric_features + category_features + ['label']:
+    for k in category_features + ['label']:
         data[k] = list()
-    for d in tokenized_data:
+        for i in range(window_size):
+            data[k].append(list())
+
+    for s in sorted_data:
         numeric_data = list()
-        for k, v in d.items():
-            if k in category_features + ['label']:
-                data[k].append(v)
-            if k in numeric_features:
-                numeric_data.append(v)
+        for i in range(len(s)):
+            d = s[i]
+            for k, v in d.items():
+                if k in category_features + ['label']:
+                    data[k][i].append(v)
+                if k in numeric_features:
+                    numeric_data.append(v)
         n_input.append(numeric_data)
-    for k, v in data.items():
-        if k in category_features:
-            c_input.append(torch.tensor(v).view(-1, 1))
+    for i in range(window_size):
+        for k, v in data.items():
+            if k in category_features:
+                c_input.append(torch.tensor(v[i]).view(-1, 1))
     n_input = torch.tensor(n_input)
-    n_input = normalize(n_input, p=2.0)
-    label = torch.tensor(data['label']).view(-1, 1)
+    label = torch.tensor(data['label'][-1]).view(-1, 1)
     # Convert data to DataLoader
     return TensorDataset(n_input, *c_input, label)
 
