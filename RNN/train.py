@@ -9,7 +9,7 @@ from accelerate import Accelerator
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--csv_file_path", type=str, default="../final/dataset_1st/training.csv")
+parser.add_argument("--csv_file_path", type=str, default="../../final/dataset_1st/training.csv")
 parser.add_argument("--hidden_size", type=int, default=16)
 parser.add_argument("--window_size", type=int, default=4)
 parser.add_argument("--learning_rate", type=float, default=0.001)
