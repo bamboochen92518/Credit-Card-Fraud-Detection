@@ -1,7 +1,8 @@
 from myfunc import *
 from numpy import *
 from time import *
-from sklearn.ensemble import RandomForestClassifier
+#from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainPath', type=str, default='/tmp2/b10902005/fintech/final/dataset_2nd/new_train.csv')
@@ -45,7 +46,8 @@ if args.validToTrain:
 	X+=Xv
 	y+=yv
 
-model=RandomForestClassifier(n_estimators=100, criterion='gini', verbose=True)
+#model=RandomForestClassifier(n_estimators=100, criterion='gini', verbose=True)
+model=DecisionTreeClassifier()
 model.fit(X, y)
 y1=model.predict(X)
 res=getRes(y, y1)
