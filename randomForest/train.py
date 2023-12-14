@@ -10,8 +10,10 @@ parser.add_argument('--testPath', type=str, default='/tmp2/b10902005/fintech/fin
 parser.add_argument('--outDir', type=str, default='/tmp2/b10902085/fintech/')
 parser.add_argument('--validToTrain', type=int, default=0)
 parser.add_argument('--removeSome', type=int, default=1)
+parser.add_argument('--nTrees', type=int, default=100)
+parser.add_argument('--maxDepth', type=int, default=30)
 args = parser.parse_args()
-outFile=args.outDir+strftime('%b%d-%H%M%S')
+outFile=args.outDir+strftime('%b%d-%H%M%S')+'_nTrees_'+str(args.nTrees)+'_maxDepth_'+str(args.maxDepth)
 
 def getRes(y0, y1):
 	res=[[0, 0], [0, 0]]
@@ -45,7 +47,9 @@ if args.validToTrain:
 	X+=Xv
 	y+=yv
 
-model=RandomForestClassifier(n_estimators=100, criterion='gini', verbose=True)
+outFile+='_trainSize_'+str(len(X))
+
+model=RandomForestClassifier(n_estimators=args.nTrees, max_depth=args.maxDepth, criterion='gini', verbose=True)
 model.fit(X, y)
 y1=model.predict(X)
 res=getRes(y, y1)
